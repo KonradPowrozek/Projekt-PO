@@ -12,7 +12,7 @@ public class ProductAdd extends JFrame {
     private JButton backButton;
 
     public ProductAdd(String loggedInUsername, boolean isRegularCustomer) {
-        super("Add Product");
+        super("Dodawanie produktu");
         this.setContentPane(this.panel1);
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         this.setSize(800, 400);
@@ -20,12 +20,15 @@ public class ProductAdd extends JFrame {
         addProduct.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // Get input values from text fields
                 String productName = nameField.getText();
                 String productPrice = priceLabel.getText();
                 String productQuantity = sizeLabel.getText();
 
-                // Call the method to add a new product
+                if (productName.isEmpty() || productPrice.isEmpty() || productQuantity.isEmpty()) {
+                    JOptionPane.showMessageDialog(ProductAdd.this, "Wypełnij wszystkie pola przed dodaniem produktu.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
                 addNewProduct(productName, productPrice, productQuantity);
             }
         });
@@ -36,7 +39,6 @@ public class ProductAdd extends JFrame {
                 Produkty produkty = new Produkty(loggedInUsername, isRegularCustomer);
                 produkty.setVisible(true);
 
-                // Close the current window
                 ProductAdd.this.dispose();
             }
         });
@@ -44,23 +46,28 @@ public class ProductAdd extends JFrame {
 
     private void addNewProduct(String productName, String productPrice, String productQuantity) {
         try {
-            // Parse input values
             double price = Double.parseDouble(productPrice);
             int quantity = Integer.parseInt(productQuantity);
 
-            // Format the price with a dot instead of a comma
+            if (price <= 0 || quantity <= 0) {
+                JOptionPane.showMessageDialog(this, "Cena i ilość muszą być większe niż 0.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            if (!productQuantity.matches("\\d+")) {
+                JOptionPane.showMessageDialog(this, "Ilość musi być liczbą całkowitą dodatnią.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
             String formattedPrice = String.format("%.2f", price).replace(',', '.');
 
-            // Create the new product data
             String newProductData = String.format("%s,%s,%d", productName, formattedPrice, quantity);
 
-            // Append the new product to the products.txt file
             try (PrintWriter writer = new PrintWriter(new FileWriter("products.txt", true))) {
                 writer.println(newProductData);
                 writer.flush();
             }
 
-            // Display success message
             JOptionPane.showMessageDialog(this, "Product added successfully!");
         } catch (NumberFormatException | IOException ex) {
             // Display error message
@@ -68,6 +75,7 @@ public class ProductAdd extends JFrame {
             ex.printStackTrace();
         }
     }
+
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
