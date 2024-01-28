@@ -66,7 +66,7 @@
               <text value="Loguj"/>
             </properties>
           </component>
-          <component id="a4470" class="javax.swing.JButton" binding="zalogujJakoKlientDetalicznyButton" default-binding="true">
+          <component id="a4470" class="javax.swing.JButton" binding="detalicButton">
             <constraints>
               <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="6" fill="0" indent="0" use-parent-layout="false"/>
             </constraints>

@@ -17,14 +17,18 @@ public class Produkty extends JFrame {
     private JTextField quanityLabel;
     private JButton addToCart;
     private JLabel valueCart;
+    private JButton backButton;
+    private JButton removeCart;
     private boolean isRegularCustomer;
     private double money;
+
+    private double cartValue = 0.0;
 
     public Produkty(String loggedInUsername, boolean isRegularCustomer) {
         super("Produkty");
         this.setContentPane(this.panel1);
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        this.setSize(800, 400);
+        this.setSize(1400, 600);
 
         this.isRegularCustomer = isRegularCustomer;
 
@@ -45,6 +49,7 @@ public class Produkty extends JFrame {
                 return false;
             }
         };
+
         table1.setModel(model);
 
         // Ustawienie szerokości kolumn
@@ -54,7 +59,7 @@ public class Produkty extends JFrame {
         }
 
         // Pobranie danych produktów i ustawienie ich w tabeli
-        loadProductsFromFile(model);
+        loadProductsFromFile(model,loggedInUsername);
 
         // Wyświetlenie ilości pieniędzy
         moneyLabel.setText("Stan konta: " + String.format("%.2f", money) + " zł");
@@ -74,17 +79,6 @@ public class Produkty extends JFrame {
         clearCartFile();
 
         // Obsługa przycisku dodawania do koszyka
-
-
-        // Zamykanie okna
-        this.addWindowListener(new java.awt.event.WindowAdapter() {
-            @Override
-            public void windowClosing(java.awt.event.WindowEvent windowEvent) {
-                // Zapisanie koszyka do pliku przed zamknięciem aplikacji
-                saveCartToFile(cartModel);
-                System.exit(0);
-            }
-        });
         addToCart.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -93,8 +87,98 @@ public class Produkty extends JFrame {
                 updateCartValueLabel(cartModel);
             }
         });
-    }
 
+        addButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Otwarcie nowego okna ProductAdd
+                ProductAdd productAdd = new ProductAdd(loggedInUsername, isRegularCustomer);
+                productAdd.setVisible(true);
+                // Zamknięcie bieżącego okna
+                Produkty.this.dispose();
+            }
+        });
+        backButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Implement navigation logic to go back to Shop01.java
+                Shop01 shop01 = new Shop01();
+                shop01.setVisible(true);
+
+                // Close the current window
+                Produkty.this.dispose();
+            }
+        });
+        removeCart.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                removeItemsFromCart(cartModel);
+                calculateCartValue(cartModel);
+                updateCartValueLabel(cartModel);
+            }
+        });
+        addMoney.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                AddMoney addMoneyWindow = new AddMoney(loggedInUsername);
+                addMoneyWindow.setVisible(true);
+
+                Produkty.this.dispose();
+            }
+        });
+    }
+    private void removeItemsFromCart(DefaultTableModel cartModel) {
+        try {
+            int selectedRow = cart1.getSelectedRow();
+
+            // Sprawdź, czy wiersz jest zaznaczony i czy indeks jest prawidłowy
+            if (selectedRow >= 0 && selectedRow < cart1.getRowCount()) {
+                String id = cartModel.getValueAt(selectedRow, 0).toString();
+                String productName = cartModel.getValueAt(selectedRow, 1).toString();
+                int quantityToRemove;
+
+                // Sprawdź, czy pole ilości nie jest puste
+                if (quanityLabel.getText().isEmpty()) {
+                    quantityToRemove = 1; // Jeśli puste, usuń tylko jeden produkt
+                } else {
+                    quantityToRemove = Integer.parseInt(quanityLabel.getText());
+
+                    // Jeśli ilość jest mniejsza lub równa 0, pokaż błąd
+                    if (quantityToRemove <= 0) {
+                        JOptionPane.showMessageDialog(this, "Podaj poprawną ilość do usunięcia (wartość musi być większa niż 0).");
+                        return;
+                    }
+                }
+
+                // Znajdź odpowiadający produkt w table1 i zaktualizuj jego ilość
+                for (int i = 0; i < table1.getRowCount(); i++) {
+                    if (id.equals(table1.getValueAt(i, 0).toString())) {
+                        int availableQuantity = Integer.parseInt(table1.getValueAt(i, 3).toString());
+                        table1.setValueAt(availableQuantity + quantityToRemove, i, 3);
+                        break; // Znaleziono produkt, nie trzeba już dalej szukać
+                    }
+                }
+
+                // Aktualizuj ilość produktów w koszyku
+                int currentQuantity = Integer.parseInt(cartModel.getValueAt(selectedRow, 3).toString());
+                if (quantityToRemove >= currentQuantity) {
+                    cartModel.removeRow(selectedRow);
+                } else {
+                    cartModel.setValueAt(currentQuantity - quantityToRemove, selectedRow, 3);
+                }
+
+                // Zapisz aktualny koszyk do pliku
+                saveCartToFile(cartModel);
+
+                // Aktualizuj wartość koszyka
+                calculateCartValue(cartModel);
+            } else {
+                JOptionPane.showMessageDialog(this, "Wybierz poprawny produkt z koszyka przed usunięciem.");
+            }
+        } catch (NullPointerException | NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Wystąpił błąd. Spróbuj ponownie.");
+        }
+    }
     private void loadUserData(String loggedInUsername) {
         try (BufferedReader reader = new BufferedReader(new FileReader("loginy.txt"))) {
             String line;
@@ -108,30 +192,50 @@ public class Produkty extends JFrame {
         } catch (IOException | NumberFormatException ex) {
             ex.printStackTrace();
         }
+
+        // Jeżeli zalogowany klient to "Klient detaliczny", wczytaj dane z odpowiedniego pliku
+        if ("Klient detaliczny".equals(loggedInUsername)) {
+            try (BufferedReader reader = new BufferedReader(new FileReader("detalicClient.txt"))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String[] data = line.split("=");
+                    if (data.length == 2 && data[0].trim().equals("Pieniądze")) {
+                        money = Double.parseDouble(data[1].trim());
+                        break;
+                    }
+                }
+            } catch (IOException | NumberFormatException ex) {
+                ex.printStackTrace();
+            }
+        }
     }
 
-    private void loadProductsFromFile(DefaultTableModel model) {
+    private void loadProductsFromFile(DefaultTableModel model, String loggedInUsername) {
         try (BufferedReader reader = new BufferedReader(new FileReader("products.txt"))) {
             String line;
-            boolean isFirstLine = true;
+            int id = 1; // Starting ID
+
+            // Dodaj nagłówki kolumn do modelu
+            model.addRow(new Object[]{"ID", "Nazwa Produktu", "Cena", "Ilość w magazynie"});
+
             while ((line = reader.readLine()) != null) {
                 String[] data = line.split(",");
-                if (data.length == 4) {
-                    if (!isFirstLine) {
-                        if (isRegularCustomer) {
-                            // Zastosuj rabat dla stałego klienta hurtowego
-                            double cena = Double.parseDouble(data[2]);
-                            cena *= 0.77;  // 23% rabatu
-                            data[2] = String.format("%.2f", cena);
-                        } else {
-                            // Zastosuj rabat dla klienta hurtowego (nie stałego)
-                            double cena = Double.parseDouble(data[2]);
-                            cena *= 0.88;  // 12% rabatu
-                            data[2] = String.format("%.2f", cena);
-                        }
-                        model.addRow(data);
+                if (data.length == 3) { // Assuming the file format is "name,price,quantity"
+                    double cena = Double.parseDouble(data[1].replace(',', '.'));
+
+                    if (isRegularCustomer) {
+                        // Stały klient hurtowy
+                        cena *= 0.77;  // 23% rabatu
+                    } else if ("Klient detaliczny".equals(loggedInUsername)) {
+                        // Klient detaliczny
+                        // Nie stosuj rabatu
+                    } else {
+                        // Klient hurtowy
+                        cena *= 0.90;  // 10% rabatu
                     }
-                    isFirstLine = false;
+
+                    model.addRow(new Object[]{id, data[0], String.format("%.2f", cena).replace('.', ','), data[2]});
+                    id++;
                 }
             }
         } catch (IOException ex) {
@@ -210,8 +314,6 @@ public class Produkty extends JFrame {
         }
     }
 
-
-
     private void saveCartToFile(DefaultTableModel cartModel) {
         try (PrintWriter writer = new PrintWriter("cart.txt")) {
             for (int i = 0; i < cartModel.getRowCount(); i++) {
@@ -236,29 +338,33 @@ public class Produkty extends JFrame {
         }
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            Produkty produkty = new Produkty("PrzykładowyUzytkownik", false);
-            produkty.setVisible(true);
-        });
-    }
-
     private double calculateCartValue(DefaultTableModel cartModel) {
         double cartValue = 0.0;
         for (int i = 0; i < cartModel.getRowCount(); i++) {
             try {
-                double price = Double.parseDouble(cartModel.getValueAt(i, 2).toString());
+                double price = Double.parseDouble(cartModel.getValueAt(i, 2).toString().replace(',', '.'));
                 int quantity = Integer.parseInt(cartModel.getValueAt(i, 3).toString());
                 cartValue += price * quantity;
+                valueCart.setText("Wartość koszyka: " + String.format("%.2f zł", cartValue));
             } catch (NumberFormatException e) {
 
             }
         }
         return cartValue;
     }
+
     private void updateCartValueLabel(DefaultTableModel cartModel) {
         double cartValue = calculateCartValue(cartModel);
         valueCart.setText("Wartość koszyka: " + String.format("%.2f zł", cartValue));
+
+        // Ustawienie wartości koszyka w obiekcie Produkty
+        this.cartValue = cartValue;
     }
 
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            Produkty produkty = new Produkty("Klient detaliczny", false);
+            produkty.setVisible(true);
+        });
+    }
 }

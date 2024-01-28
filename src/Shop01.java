@@ -10,7 +10,7 @@ public class Shop01 extends JFrame {
     private JTextField textField1;
     private JPasswordField passwordField1;
     private JButton logujButton;
-    private JButton zalogujJakoKlientDetalicznyButton;
+    private JButton detalicButton;
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
@@ -45,7 +45,19 @@ public class Shop01 extends JFrame {
                 }
             }
         });
+        detalicButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String enteredUsername = "Klient detaliczny";
+
+                // Otwórz okno Produkty.java jako Klient detaliczny
+                Produkty produkty = new Produkty(enteredUsername, false);
+                produkty.setVisible(true);
+                Shop01.this.dispose();  // Zamknij okno logowania po zalogowaniu;
+            }
+        });
     }
+
 
     private boolean checkLoginCredentials(String username, String password) {
         try (BufferedReader reader = new BufferedReader(new FileReader("loginy.txt"))) {

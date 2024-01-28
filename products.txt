@@ -1,5 +1,7 @@
-ID,Nazwa_produktu,cena,ilosć_w_magazynie
-1,chleb,3.99,10
-2,jajka,5.99,12
-3,piłka,25.32,100
-4,kij,10,7
+chleb,3.99,10
+jajka,5.99,12
+piłka,25.32,100
+kij,10.71,5
+młot,100.00,5
+Fiut,200.00,50
+MŁOCISKO PIERDOLONE,100.00,5
