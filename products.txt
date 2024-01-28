@@ -1,0 +1,6 @@
+Rower,1200,5
+Śrubki,0.85,1000
+Komputer,2400,10
+Mysz komputerowa,80,12
+Głośniki,300,3
+Drukarka,120,1
