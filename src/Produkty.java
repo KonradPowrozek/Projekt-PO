@@ -1,9 +1,9 @@
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
 
 public class Produkty extends JFrame {
     private JPanel panel1;
@@ -14,9 +14,9 @@ public class Produkty extends JFrame {
     private JButton addMoney;
     private JButton orderButton;
     private JTable cart1;
-    private JLabel wartKosz;
     private JTextField quanityLabel;
     private JButton addToCart;
+    private JLabel valueCart;
     private boolean isRegularCustomer;
     private double money;
 
@@ -27,7 +27,6 @@ public class Produkty extends JFrame {
         this.setSize(800, 400);
 
         this.isRegularCustomer = isRegularCustomer;
-
 
         // Ustawienie nazwy zalogowanego użytkownika w etykiecie
         username.setText("Zalogowany: " + loggedInUsername);
@@ -75,7 +74,7 @@ public class Produkty extends JFrame {
         clearCartFile();
 
         // Obsługa przycisku dodawania do koszyka
-        addToCart.addActionListener(e -> addToCart());
+
 
         // Zamykanie okna
         this.addWindowListener(new java.awt.event.WindowAdapter() {
@@ -84,6 +83,14 @@ public class Produkty extends JFrame {
                 // Zapisanie koszyka do pliku przed zamknięciem aplikacji
                 saveCartToFile(cartModel);
                 System.exit(0);
+            }
+        });
+        addToCart.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                addToCart(cartModel);
+                calculateCartValue(cartModel);
+                updateCartValueLabel(cartModel);
             }
         });
     }
@@ -132,7 +139,7 @@ public class Produkty extends JFrame {
         }
     }
 
-    private void addToCart() {
+    private void addToCart(DefaultTableModel cartModel) {
         try {
             int selectedRow = table1.getSelectedRow();
 
@@ -141,6 +148,7 @@ public class Produkty extends JFrame {
                 String id = table1.getValueAt(selectedRow, 0).toString();
                 String productName = table1.getValueAt(selectedRow, 1).toString();
                 String price = table1.getValueAt(selectedRow, 2).toString();
+                int availableQuantity = Integer.parseInt(table1.getValueAt(selectedRow, 3).toString());
 
                 // Check if the quantity is a valid positive number
                 try {
@@ -158,7 +166,14 @@ public class Produkty extends JFrame {
                         return;  // Exit the method if quantity is not positive
                     }
 
-                    DefaultTableModel cartModel = (DefaultTableModel) cart1.getModel();
+                    // Check if the quantity exceeds the available quantity in stock
+                    if (quantity > availableQuantity) {
+                        JOptionPane.showMessageDialog(this, "Nie wystarczająca ilość produktu na stanie.");
+                        return;  // Exit the method if quantity exceeds available quantity
+                    }
+
+                    // Update the available quantity in stock
+                    table1.setValueAt(availableQuantity - quantity, selectedRow, 3);
 
                     // Check if the product is already in the cart
                     boolean productExists = false;
@@ -179,13 +194,13 @@ public class Produkty extends JFrame {
                         cartModel.addRow(rowData);
                     }
 
-                    // Update the cart value label
-                    updateCartValueLabel();
-
                     // Save the cart to the file
                     saveCartToFile(cartModel);
-                } catch (NumberFormatException ex) {
 
+                    // Update the cart value label
+                    updateCartValueLabel(cartModel);
+                } catch (NumberFormatException ex) {
+                    ex.printStackTrace();
                 }
             } else {
                 JOptionPane.showMessageDialog(this, "Wybierz poprawny produkt z tabeli przed dodaniem do koszyka.");
@@ -196,18 +211,6 @@ public class Produkty extends JFrame {
     }
 
 
-    private void updateCartValueLabel() {
-        double cartValue = 0;
-        DefaultTableModel cartModel = (DefaultTableModel) cart1.getModel();
-
-        for (int i = 0; i < cartModel.getRowCount(); i++) {
-            String price = cartModel.getValueAt(i, 2).toString();
-            int quantity = Integer.parseInt(cartModel.getValueAt(i, 3).toString());
-            cartValue += Double.parseDouble(price) * quantity;
-        }
-
-        wartKosz.setText("Wartość koszyka: " + String.format("%.2f", cartValue) + " zł");
-    }
 
     private void saveCartToFile(DefaultTableModel cartModel) {
         try (PrintWriter writer = new PrintWriter("cart.txt")) {
@@ -239,4 +242,23 @@ public class Produkty extends JFrame {
             produkty.setVisible(true);
         });
     }
+
+    private double calculateCartValue(DefaultTableModel cartModel) {
+        double cartValue = 0.0;
+        for (int i = 0; i < cartModel.getRowCount(); i++) {
+            try {
+                double price = Double.parseDouble(cartModel.getValueAt(i, 2).toString());
+                int quantity = Integer.parseInt(cartModel.getValueAt(i, 3).toString());
+                cartValue += price * quantity;
+            } catch (NumberFormatException e) {
+
+            }
+        }
+        return cartValue;
+    }
+    private void updateCartValueLabel(DefaultTableModel cartModel) {
+        double cartValue = calculateCartValue(cartModel);
+        valueCart.setText("Wartość koszyka: " + String.format("%.2f zł", cartValue));
+    }
+
 }
