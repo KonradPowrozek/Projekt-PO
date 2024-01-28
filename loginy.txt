@@ -1,5 +1,2 @@
-Klient hurtowy,admin,0,1500
-Klient stały,admin,1,5000
-Admin,admin,0,100
-
-Mornok,123,1,2555
+Konrad,12345,1,1000
+Ornok,12345,0,2000

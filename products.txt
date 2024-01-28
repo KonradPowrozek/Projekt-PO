@@ -1,6 +1,5 @@
-Rower,1200,5
-Śrubki,0.85,1000
-Komputer,2400,10
-Mysz komputerowa,80,12
-Głośniki,300,3
-Drukarka,120,1
+ID,Nazwa produktu,Cena,Ilość w magazynie
+1,chleb,3.99,10
+2,jajka,5.99,12
+3,piłka,25.32,100
+4,kij,10,7
