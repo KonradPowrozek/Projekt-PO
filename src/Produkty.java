@@ -28,6 +28,7 @@ public class Produkty extends JFrame {
 
         this.isRegularCustomer = isRegularCustomer;
 
+
         // Ustawienie nazwy zalogowanego użytkownika w etykiecie
         username.setText("Zalogowany: " + loggedInUsername);
 
@@ -137,33 +138,63 @@ public class Produkty extends JFrame {
 
             // Check if a row is selected and if it's a valid row index
             if (selectedRow >= 0 && selectedRow < table1.getRowCount()) {
-                int quantity = Integer.parseInt(quanityLabel.getText());
+                String id = table1.getValueAt(selectedRow, 0).toString();
+                String productName = table1.getValueAt(selectedRow, 1).toString();
+                String price = table1.getValueAt(selectedRow, 2).toString();
 
-                // Check if the quantity is positive
-                if (quantity > 0) {
-                    String id = table1.getValueAt(selectedRow, 0).toString();
-                    String productName = table1.getValueAt(selectedRow, 1).toString();
-                    String price = table1.getValueAt(selectedRow, 2).toString();
+                // Check if the quantity is a valid positive number
+                try {
+                    // If quantity field is empty, show an error
+                    if (quanityLabel.getText().isEmpty()) {
+                        JOptionPane.showMessageDialog(this, "Podaj ilość produktu.");
+                        return;  // Exit the method if quantity is empty
+                    }
 
-                    Object[] rowData = {id, productName, price, quantity};
+                    int quantity = Integer.parseInt(quanityLabel.getText());
+
+                    // If quantity is less than or equal to 0, show an error
+                    if (quantity <= 0) {
+                        JOptionPane.showMessageDialog(this, "Podaj poprawną ilość produktu (wartość musi być większa niż 0).");
+                        return;  // Exit the method if quantity is not positive
+                    }
+
                     DefaultTableModel cartModel = (DefaultTableModel) cart1.getModel();
-                    cartModel.addRow(rowData);
+
+                    // Check if the product is already in the cart
+                    boolean productExists = false;
+                    for (int i = 0; i < cartModel.getRowCount(); i++) {
+                        if (id.equals(cartModel.getValueAt(i, 0).toString())) {
+                            // Update the quantity if the product exists
+                            int existingQuantity = Integer.parseInt(cartModel.getValueAt(i, 3).toString());
+                            cartModel.setValueAt(existingQuantity + quantity, i, 3);
+
+                            productExists = true;
+                            break;
+                        }
+                    }
+
+                    // If the product is not in the cart, add a new row
+                    if (!productExists) {
+                        Object[] rowData = {id, productName, price, quantity};
+                        cartModel.addRow(rowData);
+                    }
 
                     // Update the cart value label
                     updateCartValueLabel();
 
                     // Save the cart to the file
                     saveCartToFile(cartModel);
-                } else {
-                    JOptionPane.showMessageDialog(this, "Podaj poprawną ilość produktu.");
+                } catch (NumberFormatException ex) {
+
                 }
             } else {
                 JOptionPane.showMessageDialog(this, "Wybierz poprawny produkt z tabeli przed dodaniem do koszyka.");
             }
-        } catch (NumberFormatException | NullPointerException ex) {
-            JOptionPane.showMessageDialog(this, "Podaj poprawne wartości ID i ilości produktu.");
+        } catch (NullPointerException ex) {
+            JOptionPane.showMessageDialog(this, "Wystąpił błąd. Spróbuj ponownie.");
         }
     }
+
 
     private void updateCartValueLabel() {
         double cartValue = 0;
